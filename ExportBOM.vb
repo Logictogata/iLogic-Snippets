@@ -1,3 +1,5 @@
+' This code exports the "Parts Only" tab in the BOM to an excel file called excelBOM.xlsx
+
 Sub Main()
 
 	ExportBOM
