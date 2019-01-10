@@ -1,0 +1,96 @@
+' Makes DXFs of all availble flat patterns in assembly 
+
+'define the active document as an assembly file
+Dim oAsmDoc As AssemblyDocument
+oAsmDoc = ThisApplication.ActiveDocument
+oAsmName = Left(oAsmDoc.DisplayName, Len(oAsmDoc.DisplayName) -4)
+
+'check that the active document is an assembly file
+If ThisApplication.ActiveDocument.DocumentType <> kAssemblyDocumentObject Then
+MessageBox.Show("Please run this rule from the assembly file.", "iLogic")
+Exit Sub
+End If
+
+'get user input
+RUsure = MessageBox.Show ( _
+"This will create a DXF file for all of the asembly components that are sheet metal." _
+& vbLf & "This rule expects that the part file is saved." _
+& vbLf & " " _
+& vbLf & "Are you sure you want to create DXF for all of the assembly components?" _
+& vbLf & "This could take a while.", "iLogic - Batch Output DXFs ",MessageBoxButtons.YesNo)
+If RUsure = vbNo Then
+Return
+Else
+End If
+oPath = ThisDoc.Path
+oDataMedium = ThisApplication.TransientObjects.CreateDataMedium
+oContext = ThisApplication.TransientObjects.CreateTranslationContext
+oContext.Type = IOMechanismEnum.kFileBrowseIOMechanism
+oOptions = ThisApplication.TransientObjects.CreateNameValueMap
+
+'get DXF target folder path
+oFolder = oPath & "\" & oAsmName & " DXF Files"
+
+'Check for the DXF folder and create it if it does not exist
+If Not System.IO.Directory.Exists(oFolder) Then
+System.IO.Directory.CreateDirectory(oFolder)
+End If
+
+
+'- - - - - - - - - - - - -
+'- - - - - - - - - - - - -Component - - - - - - - - - - - -
+'look at the files referenced by the assembly
+Dim oRefDocs As DocumentsEnumerator
+oRefDocs = oAsmDoc.AllReferencedDocuments
+Dim oRefDoc As Document
+
+'work the the drawing files for the referenced models
+'this expects that the model has been saved
+For Each oRefDoc In oRefDocs
+iptPathName = Left(oRefDoc.FullDocumentName, Len(oRefDoc.FullDocumentName) - 3) & "ipt"
+
+'check that model is saved
+If(System.IO.File.Exists(iptPathName)) Then
+Dim oDrawDoc As PartDocument
+oDrawDoc = ThisApplication.Documents.Open(iptPathName, True)
+' OLD
+' oFileName = Left(oRefDoc.DisplayName, Len(oRefDoc.DisplayName))
+oFileName = Left(oRefDoc.DisplayName, Len(oRefDoc.DisplayName) - 4) ' 4 for .ipt
+
+Try
+
+'Set the DXF target file name
+Try
+CustomName =iProperties.Value(oFileName, "Custom", "PF_PRT_ZNR")
+Catch
+CustomName =""
+End Try
+
+' OROGINAL
+' oDataMedium.FileName = oFolder & "\" & CustomName  & " " & oFileName & ".dxf"
+oDataMedium.FileName = oFolder & "\" & CustomName  &  oFileName & ".dxf"
+
+Dim oCompDef As SheetMetalComponentDefinition
+oCompDef = oDrawDoc.ComponentDefinition
+If oCompDef.HasFlatPattern = False Then
+oCompDef.Unfold
+Else
+oCompDef.FlatPattern.Edit
+End If
+Dim sOut As String
+sOut = "FLAT PATTERN DXF?AcadVersion=2004&OuterProfileLayer=IV_OUTER_PR​OFILE"
+oCompDef.DataIO.WriteDataToFile( sOut, oDataMedium.FileName)
+
+'just for check its works coretcly
+'i=MessageBox.Show(oDataMedium.FileName, "Title",MessageBoxButtons.OKCancel)
+'MessageBox.Show(i,"title",MessageBoxButtons.OK)
+'If i=2 Then
+'Exit Sub
+'End If
+oCompDef.FlatPattern.ExitEdit
+Catch
+End Try
+oDrawDoc.Close
+Else
+End If
+Next
