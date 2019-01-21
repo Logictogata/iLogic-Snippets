@@ -78,7 +78,9 @@ Else
 oCompDef.FlatPattern.Edit
 End If
 Dim sOut As String
-sOut = "FLAT PATTERN DXF?AcadVersion=2004&OuterProfileLayer=IV_OUTER_PR​OFILE"
+' sOut = "FLAT PATTERN DXF?AcadVersion=2000&OuterProfileLayer=IV_OUTER_PR​OFILE?TangentLayer=HURRAY"
+sOut = "FLAT PATTERN DXF?AcadVersion=2000&OuterProfileLayer=OUTER&InvisibleLayers=IV_TANGENT;IV_BEND_DOWN;IV_ARC_CENTERS"
+' TANGENT BEND DOWN 
 oCompDef.DataIO.WriteDataToFile( sOut, oDataMedium.FileName)
 
 'just for check its works coretcly
